@@ -1,0 +1,204 @@
+---
+title: "Cyclistic Bike-Share Case Study"
+author: "Philemon John"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: cosmo
+    highlight: tango
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+This project is the **Google Data Analytics Capstone Case Study**: *How does a bike-share navigate speedy success?*  
+I applied the six-step data analysis process: **Ask, Prepare, Process, Analyze, Share, and Act**.  
+
+---
+
+## 1. Ask Phase
+
+### Business Task
+To understand **how annual members and casual riders use Cyclistic bikes differently**, and design strategies to **convert casual riders into annual members**.
+
+### Key Stakeholders
+- **Cyclistic marketing team** – plans campaigns based on rider behavior.  
+- **Cyclistic executive team** – approves membership strategy.  
+- **Data analytics team** – supports data-driven decision-making.
+
+---
+
+## 2. Prepare Phase
+
+### Data Source
+The dataset comes from **Cyclistic’s trip data** made available by Motivate International Inc.  
+It contains details of rides from the **past 12 months** and includes:
+
+- Ride ID  
+- Bike type  
+- Start and end timestamps  
+- Station details (name, ID, latitude, longitude)  
+- User type (member or casual)
+
+Data is publicly available and anonymized, ensuring privacy compliance.
+
+```{r load-packages, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(lubridate)
+library(janitor)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load all CSV files in 'data' folder
+```{r}
+all_trips <- list.files(path = "C:/data/Cyclistic_Project/data", pattern = "*.csv", full.names = TRUE) %>%
+lapply(read_csv) %>%
+bind_rows()
+
+glimpse(all_trips)
+```
+
+## 3.Process Phase
+
+Data Cleaning
+
+Steps performed:
+
+1.Removed duplicates and missing values where necessary.
+
+2.Converted date-time columns to proper format.
+
+3.Created new columns for ride length, day of week, month, and hour.
+
+```{r}
+# Read and clean data first
+all_trips <- all_trips %>%
+   # Step 1: make column names consistent
+  mutate(
+    started_at = as_datetime(started_at),
+    ended_at = as_datetime(ended_at),
+    ride_length = as.numeric(difftime(ended_at, started_at, units = "mins")),
+    day_of_week = wday(started_at, label = TRUE),
+    month = month(started_at, label = TRUE, abbr = FALSE),
+    hour = hour(started_at)
+  ) %>%
+  filter(ride_length > 0) %>%
+  clean_names()   
+```
+
+
+4. Analyze Phase
+
+We explored how ride duration, day of the week, and number of rides vary by user type.
+
+4.1 Average Ride Duration by User Type
+
+```{r}
+avg_ride_length <- all_trips %>%
+group_by(member_casual) %>%
+summarise(mean_ride = mean(ride_length), median_ride = median(ride_length), max_ride = max(ride_length))
+
+avg_ride_length
+```
+
+4.2 Average Ride Duration by Day of Week
+
+```{r}
+avg_ride_day <- all_trips %>%
+group_by(member_casual, day_of_week) %>%
+summarise(mean_ride = mean(ride_length), .groups = 'drop')
+
+avg_ride_day
+```
+
+4.3 Number of Rides by Day of Week
+
+```{r}
+rides_per_day <- all_trips %>%
+group_by(member_casual, day_of_week) %>%
+summarise(number_of_rides = n(), .groups = 'drop')
+
+rides_per_day
+```
+
+5. Share Phase
+
+Visualization: Average Ride Duration
+
+```{r}
+ggplot(avg_ride_length, aes(x = member_casual, y = mean_ride, fill = member_casual)) +
+geom_col(show.legend = FALSE) +
+labs(title = "Average Ride Duration by User Type",
+x = "User Type",
+y = "Average Ride Duration (minutes)") +
+theme_minimal()
+```
+
+Visualization: Number of Rides by Day of Week
+
+```{r}
+ggplot(rides_per_day, aes(x = day_of_week, y = number_of_rides, fill = member_casual)) +
+geom_col(position = "dodge") +
+labs(title = "Number of Rides by Day of Week and User Type",
+x = "Day of Week",
+y = "Number of Rides") +
+theme_minimal()
+```
+
+Visualization: Average Ride Duration by Day
+
+```{r}
+ggplot(avg_ride_day, aes(x = day_of_week, y = mean_ride, color = member_casual, group = member_casual)) +
+geom_line(size = 1.2) +
+geom_point(size = 2) +
+labs(title = "Average Ride Duration by Day of Week",
+x = "Day of Week",
+y = "Average Ride Duration (minutes)") +
+theme_minimal()
+```
+
+6. Act Phase
+Key Findings
+
+Casual riders have longer average ride times (≈ 23 mins) compared to members (≈ 12 mins).
+
+Members ride more frequently, particularly on weekdays, indicating commute patterns.
+
+Casual riders peak on weekends, suggesting leisure use.
+
+Ride durations for casual users spike during weekends and midday hours.
+
+Recommendations
+
+Convert casuals to members via:
+
+Weekend membership promotions.
+
+Seasonal or tourist membership options.
+
+Reward programs for repeated rides.
+
+Corporate partnerships: Offer discounted memberships for employees.
+
+In-app marketing: Show casual users their potential savings if they became members.
+
+7. Conclusion
+
+This analysis reveals clear behavioral patterns distinguishing casual riders from members.
+By leveraging these insights, Cyclistic can craft targeted marketing campaigns to boost membership and revenue.
+
+8. Next Steps
+
+Analyze station-level data to understand popular start and end locations.
+
+Incorporate weather data to see its influence on riding behavior.
+
+Build predictive models to forecast peak riding times.
+
+Prepared by Philemon John
+Data Analyst

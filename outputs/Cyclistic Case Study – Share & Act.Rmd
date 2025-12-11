@@ -1,0 +1,135 @@
+---
+title: "Cyclistic Bike-Share Analysis"
+author: "Philemon John"
+output: html_document
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: cerulean
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+Cyclistic aims to convert casual riders into annual members. This report summarizes key insights from usage data and recommends marketing actions based on ride behavior patterns.
+
+
+## Data Summary
+The dataset contains over 5.5 million rides from October 2023 to October 2024, with information on user type, duration, day of week, and rideable type.
+
+## Key Findings
+
+### 1. Average Ride Duration
+```{r}
+# Insert your chart from previous step
+all_trips %>%
+  group_by(member_casual) %>%
+  summarise(mean_ride = mean(ride_length)) %>%
+  ggplot(aes(x = member_casual, y = mean_ride, fill = member_casual)) +
+  geom_col() +
+  labs(title = "Average Ride Duration by User Type",
+       x = "User Type", y = "Average Duration (minutes)") +
+  theme_minimal()
+```
+
+Insight:
+Casual riders average 23 minutes per ride, nearly twice as long as members (12 minutes), showing that casual riders often ride for recreation or leisure.
+
+### 2. Ride Patterns by Day of Week
+
+```{r}
+all_trips %>%
+group_by(member_casual, day_of_week) %>%
+summarise(number_of_rides = n(), .groups = 'drop') %>%
+ggplot(aes(x = day_of_week, y = number_of_rides, fill = member_casual)) +
+geom_col(position = "dodge") +
+labs(title = "Number of Rides by Day and User Type",
+x = "Day of Week", y = "Number of Rides") +
+theme_minimal()
+```
+
+Insight:
+Casual riders mostly use bikes on weekends, while members ride consistently throughout the week — suggesting weekday commuting patterns.
+
+### 3.Average Ride Duration by Day of Week
+
+```{r}
+avg_ride_day <- all_trips %>%
+  group_by(member_casual, day_of_week) %>%
+  summarise(mean_ride = mean(ride_length, na.rm = TRUE), .groups = 'drop')
+
+ggplot(avg_ride_day, aes(x = day_of_week, y = mean_ride, color = member_casual, group = member_casual)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  labs(title = "Average Ride Duration by Day of Week",
+       x = "Day of Week",
+       y = "Average Ride Duration (minutes)") +
+  theme_minimal()
+```
+Insight:
+Casual riders’ ride durations spike on weekends, while members maintain consistent short rides across the week.
+
+### 4.Rides by Hour of Day
+```{r}
+all_trips$hour <- lubridate::hour(all_trips$started_at)
+
+rides_by_hour <- all_trips %>%
+  group_by(member_casual, hour) %>%
+  summarise(rides = n(), .groups = 'drop')
+
+ggplot(rides_by_hour, aes(x = hour, y = rides, color = member_casual)) +
+  geom_line(size = 1.2) +
+  labs(title = "Rides by Hour of Day",
+       x = "Hour of Day (24h)",
+       y = "Number of Rides") +
+  theme_minimal()
+```
+
+Insight:
+Members peak around 7–9 AM and 5–6 PM (commute hours).
+Casual riders peak midday and late afternoon, typical of leisure activities.
+
+# Insights Summary:
+# 1. Members take shorter, consistent rides mainly on weekdays (commuting).
+# 2. Casual riders take longer rides, mainly on weekends (leisure).
+# 3. Casual riders’ peak hours are mid-day, while members’ peaks are during commute hours.
+# 4. Members generate steady usage throughout the week, showing loyalty.
+# 5. Casual riders can be targeted with weekend offers, loyalty points, or membership discounts.
+
+
+##Recommendations (Act Phase)
+
+### 1. Weekend Membership Promotions:
+Offer discounted weekend passes to encourage casual riders to transition to annual plans.
+
+### 2. Commuter Conversion Campaign:
+Target casual riders who ride frequently on weekdays — promote benefits of unlimited rides and cost savings.
+
+### 3. Mobile App Nudges:
+Use in-app notifications to show casual riders how much they’d save if they subscribed.
+
+### 4. Dockless Feature Emphasis:
+Highlight flexibility for members using electric bikes that don’t require docking stations.
+
+
+## Summary Tables
+```{r}
+ggsave("avg_ride_duration.png", width = 6, height = 4)
+ggsave("rides_by_day.png", width = 6, height = 4)
+write.csv(avg_ride_day, "average_ride_day_summary.csv", row.names = FALSE)
+```
+
+##Conclusion
+
+Data shows distinct behavioral differences between casual and member riders. By aligning marketing efforts with casual riders’ weekend habits and leisure interests, Cyclistic can increase conversions to annual membership.
+
+
+
+
+
+
